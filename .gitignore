@@ -1,0 +1,26 @@
+# --- Entornos Virtuales (Tu venv específico y otros comunes) ---
+Yolov8n/
+venv/
+env/
+.env
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- YOLO / Ultralytics ---
+# Ignorar la carpeta donde se guardan los entrenamientos y predicciones
+runs/
+# Ignorar datasets descargados (opcional, pero recomendado si pesan mucho)
+datasets/
+# Ignorar modelos pesados (.pt) para no saturar GitHub
+# (Si tienes un modelo propio final que sí quieres subir, puedes forzarlo con git add -f)
+*.pt
+*.onnx
+
+# --- Archivos de Sistema y Editores ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
