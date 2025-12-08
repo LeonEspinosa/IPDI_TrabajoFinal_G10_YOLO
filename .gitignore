@@ -24,3 +24,5 @@ datasets/
 .idea/
 .DS_Store
 Thumbs.db
+*.mp4
+*.webm

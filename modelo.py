@@ -4,9 +4,9 @@ from ultralytics import YOLO
 from sort import Sort
 
 if __name__ == '__main__':
-    cap = cv2.VideoCapture("vid_prueba.webm")
+    cap = cv2.VideoCapture("D:/Universidad/Clases_2025/PDI/Trabajo Final/Tp_Final/vid_prueba.mp4")
 
-    model = YOLO("yolov8n.pt")
+    model = YOLO("yolov5s.pt")
 
     tracker = Sort()
 
