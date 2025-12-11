@@ -1,5 +1,6 @@
 # --- Entornos Virtuales (Tu venv específico y otros comunes) ---
 Yolov8n/
+YOLOIPDI310/
 venv/
 env/
 .env
