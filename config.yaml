@@ -1,36 +1,42 @@
 # --- CONFIGURACIÓN DEL PROYECTO ---
-project_name: "Proyecto_IPDI"
-experiment_name: "YOLOv8n_Adam_Cos_v1"
+# RUTA DE SEGURIDAD: Guardamos directamente en Drive.
+# Si Colab se desconecta, los pesos 'best.pt' y 'last.pt' estarán aquí a salvo.
+project_name: "/content/drive/MyDrive/IPDI/Trabajo Final/Resultados_YOLO"
+experiment_name: "YOLOv8n_Exp1_FullAug"
 
 # --- RUTAS ---
-# IMPORTANTE: Asegúrate de que este archivo exista y tenga las rutas absolutas o relativas correctas a tus imágenes
+# Esta ruta será sobrescrita dinámicamente por el main.py cuando inyecte el dataset descomprimido
 data_yaml_path: "dataset/data.yaml" 
 
 # --- MODELO ---
-model_version: "yolov8n.pt"  # Nano para el mini-proyecto (velocidad > precisión extrema)
+model_version: "yolov8n.pt"
 img_size: 640
 
-# --- HIPERPARÁMETROS DE ENTRENAMIENTO (Basado en Khedkar et al.) ---
-epochs: 150              # Suficiente para estabilizar la función de pérdida
-batch_size: 16           # Ajustar según VRAM de tu GPU
-optimizer: "Adam"        # Mejor convergencia inicial en datasets complejos
-lr0: 0.001               # Learning Rate inicial
+# --- HIPERPARÁMETROS DE HARDWARE ---
+epochs: 300              # Techo alto, regulado por 'patience'
+batch_size: 32           # 64 puede ser inestable si usas cache en RAM + Drive I/O. 32 es seguro.
+workers: 8               # Límite seguro para Colab
+cache: True              # Carga imágenes en RAM para compensar la lentitud de escribir en Drive
+device: 0                
+
+# --- OPTIMIZADOR ---
+optimizer: "Adam"        
+lr0: 0.001               
 momentum: 0.937
 weight_decay: 0.0005
-patience: 25             # Early stopping para evitar overfitting
 
-# --- AUGMENTATION (Nativa de YOLO - ON THE FLY) ---
-# Justificación Agronómica: 
-# - No rotamos 90 grados (las naranjas cuelgan, no flotan en gravedad cero).
-# - Flip horizontal OK (simetría esférica).
-# - Flip vertical OFF (el cielo está arriba, el suelo abajo).
-degrees: 15.0            # Rotación leve (viento/ángulo de cámara)
+# --- ESTRATEGIA DE PARADA (PACIENCIA) ---
+patience: 20             # Si no mejora en 20 épocas, se detiene.
+
+# --- AUGMENTATION (Nivel 2 - Agronómico) ---
+degrees: 20.0            # Rotación
+flipud: 0.5              # Espejo vertical
 fliplr: 0.5              # Espejo horizontal
-flipud: 0.0              # Espejo vertical DESACTIVADO
-mosaic: 1.0              # Vital para detectar objetos pequeños
-mixup: 0.1               # Robustez ante oclusiones
+scale: 0.5               # Escala +/- 50%
+translate: 0.1           # Traslación
+mosaic: 1.0              # Siempre activo en YOLOv8
+mixup: 0.15              # Mezcla de imágenes
+copy_paste: 0.15         # Copy-Paste 
 
 # --- SISTEMA ---
-seed: 42                 # Reproducibilidad estricta
-device: 0                # GPU ID (usar 'cpu' si no hay GPU dedicada)
-workers: 4
+seed: 42
