@@ -14,7 +14,7 @@ img_size: 640
 
 # --- HIPERPARÁMETROS DE HARDWARE ---
 epochs: 300              # Techo alto, regulado por 'patience'
-batch_size: 64           # 64 puede ser inestable si usas cache en RAM + Drive I/O. 32 es seguro.
+batch_size: 50           # 64 puede ser inestable si usas cache en RAM + Drive I/O. 32 es seguro.
 workers: 10               # Límite seguro para Colab
 cache: True              # Carga imágenes en RAM para compensar la lentitud de escribir en Drive
 device: 0                
