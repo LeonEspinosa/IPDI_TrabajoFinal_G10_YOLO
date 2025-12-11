@@ -27,3 +27,6 @@ datasets/
 Thumbs.db
 *.mp4
 *.webm
+
+dataset/
+dataset.zip
