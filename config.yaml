@@ -30,7 +30,7 @@ weight_decay: 0.0005     # Decaimiento de pesos para evitar sobreajuste
 fl_gamma: 1.5            # Focal Loss Gamma: Ayuda a detectar naranjas ocluidas/difíciles
 
 # --- ESTRATEGIA DE PARADA (PACIENCIA) ---
-patience: 25             # Aumentamos ligeramente la paciencia para dar tiempo a SGD de converger
+patience: 50             # Aumento la paciencia para dar tiempo a SGD de converger
 
 # --- AUGMENTATION FOTOMÉTRICA (NUEVO: Vital para Naranjas) ---
 # Valores inspirados en papers de detección de cítricos para manejar luz y madurez
