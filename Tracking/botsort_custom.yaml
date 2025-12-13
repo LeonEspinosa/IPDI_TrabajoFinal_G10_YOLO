@@ -1,0 +1,40 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Configuración personalizada de BoT-SORT para conteo de naranjas (IPDI G10)
+
+tracker_type: botsort  # Algoritmo seleccionado
+
+# --- UMBRALES DE DETECCIÓN Y ASOCIACIÓN ---
+# track_high_thresh: Confianza mínima para iniciar un nuevo track.
+# Alto (0.5) para evitar que hojas brillantes se conviertan en "naranjas fantasma".
+track_high_thresh: 0.5 
+
+# track_low_thresh: Confianza mínima para mantener un track existente.
+# Bajo (0.1) para seguir rastreando la naranja aunque se oculte parcialmente y la confianza baje.
+track_low_thresh: 0.1 
+
+# new_track_thresh: Confianza para confirmar un track como definitivo.
+new_track_thresh: 0.6 
+
+# match_thresh: Umbral de similitud (IoU + Apariencia) para considerar que es el mismo objeto.
+match_thresh: 0.8 
+
+# --- MEMORIA Y PERSISTENCIA ---
+# track_buffer: Número de frames que el tracker "recuerda" un objeto perdido.
+# 60 frames = 2 segundos a 30fps. Vital para cuando una rama tapa la naranja completamente.
+track_buffer: 60 
+
+# --- PARÁMETROS ESPECÍFICOS DE BO-SORT ---
+# gmc_method: Compensación de Movimiento Global.
+# 'sparseOptFlow' usa flujo óptico para anular el movimiento de tu cámara/celular.
+gmc_method: sparseOptFlow 
+
+# proximity_thresh: Cuán cerca deben estar las cajas para asociarse.
+proximity_thresh: 0.5 
+
+# appearance_thresh: Umbral para Re-Identificación visual (si se activa with_reid).
+appearance_thresh: 0.25 
+
+# with_reid: Re-Identificación Visual (Deep Appearance Descriptor).
+# False: Más rápido y a veces mejor para objetos idénticos como naranjas (se confunden entre sí).
+# True: Intenta distinguir cada naranja por sus píxeles. 
+with_reid: False
