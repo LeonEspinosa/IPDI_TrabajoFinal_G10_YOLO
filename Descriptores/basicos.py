@@ -82,3 +82,16 @@ def calcular_proyecciones(mask_binaria):
     proj_y = np.sum(binaria, axis=1)
     
     return proj_x, proj_y
+
+def calcular_ejes_elipse(contorno):
+    """
+    Ajusta una elipse al contorno y retorna sus ejes (Mayor, Menor).
+    """
+    if contorno is None or len(contorno) < 5:
+        return 0.0, 0.0
+        
+    try:
+        (e_center, e_axes, e_angle) = cv2.fitEllipse(contorno)
+        return float(max(e_axes)), float(min(e_axes))
+    except Exception:
+        return 0.0, 0.0

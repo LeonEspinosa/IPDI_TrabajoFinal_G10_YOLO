@@ -15,14 +15,6 @@ except ImportError:
     print("❌ ERROR: No se encuentra el módulo 'ROIExtractor'.")
     sys.exit(1)
 
-# Importar módulo de Descriptores
-try:
-    from Descriptores import basicos, contorno, factores_forma, topologicos, preprocesamiento
-    DESCRIPTORES_AVAILABLE = True
-except ImportError:
-    print("⚠️ ADVERTENCIA: No se pudieron importar los módulos de 'Descriptores'.")
-    DESCRIPTORES_AVAILABLE = False
-
 # ==========================================
 #  CONFIGURACIÓN DE RUTAS POR DEFECTO
 # ==========================================
@@ -34,93 +26,11 @@ DEFAULT_CONFIG = {
 }
 
 # ==========================================
-#  FUNCIONES DE PROCESAMIENTO
-# ==========================================
-
-def segmentar_naranja(imagen_bgr):
-    """
-    Aplica una máscara binaria para aislar la naranja del fondo usando HSV.
-    
-    Returns:
-        tuple: (imagen_aislada, mascara_binaria)
-    """
-    hsv = cv2.cvtColor(imagen_bgr, cv2.COLOR_BGR2HSV)
-    
-    # Rangos de color para naranjas (ajustar según iluminación)
-    lower_orange = np.array([10, 100, 20])
-    upper_orange = np.array([25, 255, 255])
-    
-    mask = cv2.inRange(hsv, lower_orange, upper_orange)
-    
-    # Limpieza morfológica
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    
-    # Aplicar máscara (fondo negro)
-    resultado = cv2.bitwise_and(imagen_bgr, imagen_bgr, mask=mask)
-    return resultado, mask
-
-
-def calcular_descriptores(track_id, imagen_aislada, mascara):
-    """
-    Calcula descriptores de forma y color sobre la imagen aislada.
-    
-    Returns:
-        dict: Diccionario con los descriptores calculados
-    """
-    datos = {'Track_ID': track_id}
-    
-    # 1. Descriptores de Color
-    try:
-        media_color = cv2.mean(imagen_aislada, mask=mascara)[:3]
-        datos['Color_B_Mean'] = round(media_color[0], 2)
-        datos['Color_G_Mean'] = round(media_color[1], 2)
-        datos['Color_R_Mean'] = round(media_color[2], 2)
-    except Exception as e:
-        print(f"  ⚠️ Error en descriptores de color ID {track_id}: {e}")
-
-    # 2. Descriptores de Forma
-    try:
-        contours, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if contours:
-            cnt = max(contours, key=cv2.contourArea)
-            area = cv2.contourArea(cnt)
-            perimetro = cv2.arcLength(cnt, True)
-            
-            datos['Area_px'] = int(area)
-            datos['Perimetro_px'] = round(perimetro, 2)
-            
-            # Compacidad
-            if area > 0:
-                datos['Compacidad'] = round((perimetro ** 2) / (4 * np.pi * area), 4)
-            else:
-                datos['Compacidad'] = 0
-            
-            # Elipse (Ejes Mayor y Menor)
-            if len(cnt) >= 5:
-                (e_center, e_axes, e_angle) = cv2.fitEllipse(cnt)
-                datos['Eje_Mayor'] = round(max(e_axes), 2)
-                datos['Eje_Menor'] = round(min(e_axes), 2)
-                
-                # Excentricidad
-                if max(e_axes) > 0:
-                    datos['Excentricidad'] = round(min(e_axes) / max(e_axes), 4)
-                else:
-                    datos['Excentricidad'] = 0
-                    
-    except Exception as e:
-        print(f"  ⚠️ Error en descriptores de forma ID {track_id}: {e}")
-        
-    return datos
-
-
-# ==========================================
 #  MAIN
 # ==========================================
 
 def main():
-    print("\n🍊 === SISTEMA DE TRACKING Y ANÁLISIS (IPDI G10) === 🍊")
+    print("\n🍊 === SISTEMA DE TRACKING (Etapa 1: Extracción) === 🍊")
 
     # --- Argument Parser ---
     parser = argparse.ArgumentParser()
@@ -211,7 +121,7 @@ def main():
             confidences = results[0].boxes.conf.cpu().numpy()
             
             for box, track_id, conf in zip(boxes, track_ids, confidences):
-                # Actualizar buffer con el frame original (sin anotaciones)
+                # Actualizar buffer con el frame original
                 track_buffer.update(track_id, frame, box, conf, frame_idx)
 
         # Guardar frame anotado en video de salida
@@ -242,63 +152,52 @@ def main():
         return
 
     # ==========================================
-    #  FASE 2: SELECCIÓN, AISLAMIENTO Y DESCRIPTORES
+    #  FASE 2: EXPORTAR METADATA Y CROPS
     # ==========================================
     
-    print(f"\n🔬 FASE 2: Análisis de Descriptores...")
-    print("   (Aislamiento de fondo + Cálculo de descriptores)")
+    print(f"\n💾 FASE 2: Guardando Crops y Metadata...")
     
-    resultados_finales = []
+    metadata_list = []
     
     for track_id, data in best_shots.items():
-        print(f"   -> Procesando ID {track_id} (conf: {data['conf']:.2f}, frame: {data['frame_idx']})...", end="")
-        
         best_img = data['image']
         
-        # 1. AISLAMIENTO: Segmentar la naranja del fondo
-        img_aislada, mascara = segmentar_naranja(best_img)
+        # Nombre del archivo (cambiado a PNG para sin pérdidas)
+        filename = f"ID_{track_id}_original.png"
+        filepath = output_dir_crops / filename
         
-        # Guardar imágenes para visualización
-        cv2.imwrite(str(output_dir_crops / f"ID_{track_id}_original.jpg"), best_img)
-        cv2.imwrite(str(output_dir_crops / f"ID_{track_id}_aislada.jpg"), img_aislada)
-        cv2.imwrite(str(output_dir_crops / f"ID_{track_id}_mascara.jpg"), mascara)
+        # Guardar imagen PNG
+        cv2.imwrite(str(filepath), best_img)
         
-        # 2. DESCRIPTORES: Calcular sobre la imagen aislada
-        descriptores = calcular_descriptores(track_id, img_aislada, mascara)
+        # Guardar metadata
+        metadata = {
+            'ID': track_id,
+            'Archivo': filename,
+            'Confianza': round(data['conf'], 4),
+            'Frame_Idx': data['frame_idx'],
+            'BBox_X1': data['bbox'][0],
+            'BBox_Y1': data['bbox'][1],
+            'BBox_X2': data['bbox'][2],
+            'BBox_Y2': data['bbox'][3]
+        }
+        metadata_list.append(metadata)
         
-        # Agregar metadatos del tracking
-        descriptores['Frame_Idx'] = data['frame_idx']
-        descriptores['Confianza'] = round(data['conf'], 4)
-        descriptores['BBox_X1'] = data['bbox'][0]
-        descriptores['BBox_Y1'] = data['bbox'][1]
-        descriptores['BBox_X2'] = data['bbox'][2]
-        descriptores['BBox_Y2'] = data['bbox'][3]
+    # Guardar CSV de Metadata
+    if metadata_list:
+        df_meta = pd.DataFrame(metadata_list)
+        # Ordenar columnas
+        cols = ['ID', 'Archivo', 'Confianza', 'Frame_Idx', 'BBox_X1', 'BBox_Y1', 'BBox_X2', 'BBox_Y2']
+        df_meta = df_meta[cols].sort_values('ID')
         
-        resultados_finales.append(descriptores)
-        print(" ✓")
-
-    # ==========================================
-    #  FASE 3: GUARDAR RESULTADOS
-    # ==========================================
-    
-    print(f"\n💾 FASE 3: Guardando Resultados...")
-    
-    # Guardar CSV con descriptores
-    if resultados_finales:
-        df = pd.DataFrame(resultados_finales)
-        csv_path = output_dir_data / "descriptores_naranjas.csv"
-        df.to_csv(csv_path, index=False)
+        csv_path = output_dir_data / "tracking_metadata.csv"
+        df_meta.to_csv(csv_path, index=False)
         
-        print(f"✅ CSV guardado en: {csv_path}")
-        print(f"✅ Imágenes guardadas en: {output_dir_crops}")
-        print(f"\n📊 Resumen de Análisis ({len(resultados_finales)} naranjas):")
-        print("-" * 60)
-        print(df.to_string(index=False))
-        print("-" * 60)
+        print(f"✅ Metadata guardada en: {csv_path}")
+        print(f"✅ Imágenes (PNG) guardadas en: {output_dir_crops}")
     else:
-        print("\n⚠️ No se generaron datos de análisis.")
+        print("\n⚠️ No se generaron datos.")
 
-    print("\n🎉 ¡Proceso completado exitosamente!")
+    print("\n🎉 ¡Etapa 1 Completada! Ahora ejecuta 'process_descriptors.py'")
 
 
 if __name__ == "__main__":

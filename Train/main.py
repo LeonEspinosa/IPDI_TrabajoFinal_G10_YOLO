@@ -10,7 +10,9 @@ def main():
     args = parser.parse_args()
 
     # Rutas por defecto
-    CONFIG_PATH = "config.yaml"
+    import os
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    CONFIG_PATH = os.path.join(BASE_DIR, "config.yaml")
     
     # Cargar config para modificarla si viene argumento externo
     with open(CONFIG_PATH, 'r') as f:

@@ -84,3 +84,32 @@ def limpiar_ruido(mask_binaria, kernel_size=3):
     mask_limpia = cv2.morphologyEx(mask_limpia, cv2.MORPH_CLOSE, kernel)
     
     return mask_limpia
+
+def segmentar_naranja_hsv(imagen_bgr):
+    """
+    Aplica una máscara binaria para aislar la naranja del fondo usando HSV.
+    Portado desde main_tracking.py.
+    
+    Returns:
+        tuple: (imagen_aislada, mascara_binaria)
+    """
+    if imagen_bgr is None:
+        return None, None
+        
+    hsv = cv2.cvtColor(imagen_bgr, cv2.COLOR_BGR2HSV)
+    
+    # Rangos de color para naranjas (ajustar según iluminación)
+    # Estos valores vienen del script original que funcionaba bien
+    lower_orange = np.array([10, 100, 20])
+    upper_orange = np.array([25, 255, 255])
+    
+    mask = cv2.inRange(hsv, lower_orange, upper_orange)
+    
+    # Limpieza morfológica
+    kernel = np.ones((5, 5), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    
+    # Aplicar máscara (fondo negro)
+    resultado = cv2.bitwise_and(imagen_bgr, imagen_bgr, mask=mask)
+    return resultado, mask
