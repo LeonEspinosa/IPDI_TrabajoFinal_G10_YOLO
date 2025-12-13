@@ -1,20 +1,20 @@
 import cv2
+import supervision as sv
 from ultralytics import YOLO
-from collections import defaultdict
-import numpy as np
 import argparse
 import os
+import numpy as np
 
 def process_video_tracking(model_path, input_video_path, output_video_path, tracker_type="bytetrack.yaml", show_live=True):
     """
-    Aplica tracking a un video localmente.
+    Aplica tracking a un video localmente usando la librería Supervision para visualización profesional.
     Args:
         tracker_type: 'bytetrack.yaml' o 'botsort.yaml'
     """
     # Limpiar consola
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    print(f"=== SISTEMA DE TRACKING DE NARANJAS (LOCAL) ===")
+    print(f"=== SISTEMA DE TRACKING DE NARANJAS (MEJORADO CON SUPERVISION) ===")
     print(f"📂 Modelo: {model_path}")
     print(f"🎞️ Video: {input_video_path}")
     print(f"🎯 Algoritmo: {tracker_type}")
@@ -27,7 +27,7 @@ def process_video_tracking(model_path, input_video_path, output_video_path, trac
         print(f"❌ ERROR: No se encuentra el video en: {input_video_path}")
         return
 
-    # 1. Cargar Modelo
+    # 1. Cargar Modelo YOLOv8
     print("⏳ Cargando modelo YOLOv8...")
     try:
         model = YOLO(model_path)
@@ -35,69 +35,99 @@ def process_video_tracking(model_path, input_video_path, output_video_path, trac
         print(f"❌ Error cargando modelo: {e}")
         return
 
-    # 2. Abrir Video
-    cap = cv2.VideoCapture(input_video_path)
+    # 2. Configurar Annotators de Supervision
+    # BoxAnnotator: Dibuja las cajas bounding boxes
+    # LabelAnnotator: Dibuja las etiquetas y confianza
+    # TraceAnnotator: Dibuja la estela del movimiento (Tracking)
+    box_annotator = sv.BoxAnnotator(
+        thickness=2,
+        color=sv.ColorPalette.DEFAULT
+    )
     
-    # Propiedades
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    label_annotator = sv.LabelAnnotator(
+        text_scale=0.5,
+        text_thickness=1,
+        text_padding=10
+    )
+    
+    trace_annotator = sv.TraceAnnotator(
+        thickness=2,
+        trace_length=30, # Longitud de la estela
+        position=sv.Position.CENTER
+    )
 
-    # 3. Salida
-    video_writer = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+    # 3. Procesamiento de Video
+    # Usamos VideoInfo para obtener metadatos y VideoSink para guardar eficientemente
+    video_info = sv.VideoInfo.from_video_path(input_video_path)
+    print(f"ℹ️ Info Video: {video_info.width}x{video_info.height} @ {video_info.fps} FPS")
 
-    # Historial
-    track_history = defaultdict(lambda: [])
+    # Contador de IDs únicos
     unique_ids_detected = set()
 
-    print("🚀 Iniciando inferencia. Presiona 'q' en la ventana de video para salir antes.")
+    print("🚀 Iniciando inferencia...")
 
-    while cap.isOpened():
-        success, frame = cap.read()
-        if not success:
-            break
+    # Generador de frames con Supervision
+    # Esto reemplaza el bucle while cap.isOpened() tradicional para una gestión más limpia
+    frame_generator = sv.get_video_frames_generator(input_video_path)
+    
+    # Context manager para guardar el video
+    with sv.VideoSink(target_path=output_video_path, video_info=video_info) as sink:
+        for frame in frame_generator:
+            
+            # 4. Inferencia y Tracking con Ultralytics
+            # persist=True es vital para mantener los IDs entre frames
+            results = model.track(frame, persist=True, tracker=tracker_type, conf=0.45, iou=0.5, verbose=False)[0]
 
-        # 4. TRACKING
-        # conf=0.45 filtra falsos positivos (caras)
-        # iou=0.5 ayuda si las naranjas están muy juntas
-        results = model.track(frame, persist=True, tracker=tracker_type, conf=0.45, iou=0.5, verbose=False)
+            # 5. Convertir resultados a formato Supervision (sv.Detections)
+            detections = sv.Detections.from_ultralytics(results)
+            
+            # Filtrar detecciones que tengan Tracker ID (a veces se pierden momentáneamente)
+            if detections.tracker_id is not None:
+                # Actualizar conjunto de IDs únicos para el conteo global
+                unique_ids_detected.update(detections.tracker_id)
 
-        annotated_frame = results[0].plot() # Dibuja cajas e IDs
+                # 6. Anotación (Dibujado)
+                # Orden: Trazas (fondo) -> Cajas -> Etiquetas (frente)
+                annotated_frame = trace_annotator.annotate(
+                    scene=frame.copy(),
+                    detections=detections
+                )
+                
+                annotated_frame = box_annotator.annotate(
+                    scene=annotated_frame,
+                    detections=detections
+                )
+                
+                # Crear etiquetas personalizadas: "#ID Cladse Conf"
+                labels = [
+                    f"#{tracker_id} {model.model.names[class_id]} {confidence:0.2f}"
+                    for tracker_id, class_id, confidence
+                    in zip(detections.tracker_id, detections.class_id, detections.confidence)
+                ]
+                
+                annotated_frame = label_annotator.annotate(
+                    scene=annotated_frame,
+                    detections=detections,
+                    labels=labels
+                )
+            else:
+                annotated_frame = frame
 
-        if results[0].boxes.id is not None:
-            boxes = results[0].boxes.xywh.cpu()
-            track_ids = results[0].boxes.id.int().cpu().tolist()
+            # Info en pantalla (Dashboard simple)
+            rect_color = (0, 0, 0)
+            cv2.rectangle(annotated_frame, (0, 0), (video_info.width, 50), rect_color, -1)
+            info_text = f"Algoritmo: {tracker_type.split('.')[0].upper()} | Conteo Total: {len(unique_ids_detected)}"
+            cv2.putText(annotated_frame, info_text, (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-            for box, track_id in zip(boxes, track_ids):
-                x, y, w_box, h_box = box
-                unique_ids_detected.add(track_id)
+            # Guardar frame procesado
+            sink.write_frame(annotated_frame)
 
-                # Dibujar estela
-                track = track_history[track_id]
-                track.append((float(x), float(y)))
-                if len(track) > 30: 
-                    track.pop(0)
+            # Mostrar en vivo (Solo si se solicita y hay entorno gráfico)
+            if show_live:
+                cv2.imshow("Tracking Supervision - IPDI", annotated_frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
 
-                points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                cv2.polylines(annotated_frame, [points], isClosed=False, color=(0, 255, 255), thickness=2)
-
-        # Info en pantalla
-        info_text = f"Algoritmo: {tracker_type.split('.')[0].upper()} | Conteo Total: {len(unique_ids_detected)}"
-        cv2.rectangle(annotated_frame, (0, 0), (w, 50), (0, 0, 0), -1)
-        cv2.putText(annotated_frame, info_text, (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
-        # Guardar
-        video_writer.write(annotated_frame)
-
-        # Mostrar en vivo (Solo en PC local)
-        if show_live:
-            cv2.imshow("Tracking en Tiempo Real - IPDI", annotated_frame)
-            # Salir con 'q'
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
-    cap.release()
-    video_writer.release()
     cv2.destroyAllWindows()
     
     print(f"\n✅ PROCESO COMPLETADO.")
@@ -106,10 +136,10 @@ def process_video_tracking(model_path, input_video_path, output_video_path, trac
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, required=True)
-    parser.add_argument('--source', type=str, required=True)
-    parser.add_argument('--output', type=str, default='resultado_local.mp4')
-    parser.add_argument('--method', type=str, default='bytetrack.yaml')
+    parser.add_argument('--model', type=str, required=True, help="Ruta al archivo .pt del modelo")
+    parser.add_argument('--source', type=str, required=True, help="Ruta al video de entrada")
+    parser.add_argument('--output', type=str, default='resultado_supervision.mp4', help="Ruta de salida")
+    parser.add_argument('--method', type=str, default='bytetrack.yaml', help="Método de tracking")
     
     args = parser.parse_args()
     

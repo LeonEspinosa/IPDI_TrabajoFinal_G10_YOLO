@@ -2,33 +2,43 @@
 # RUTA DE SEGURIDAD: Guardamos directamente en Drive.
 # Si Colab se desconecta, los pesos 'best.pt' y 'last.pt' estarán aquí a salvo.
 project_name: "/content/drive/MyDrive/IPDI/Trabajo Final/Resultados_YOLO"
-experiment_name: "YOLOv8n_Exp1_FullAug"
+experiment_name: "YOLOv8n_Exp_Mejorado_SGD_HSV" # Nombre actualizado para diferenciar el experimento
 
 # --- RUTAS ---
 # Esta ruta será sobrescrita dinámicamente por el main.py cuando inyecte el dataset descomprimido
 data_yaml_path: "dataset/data.yaml" 
 
 # --- MODELO ---
-model_version: "yolov8n.pt"
+model_version: "yolov8n.pt" # Mantenemos v8 por ahora, actualizaremos a v10/11 luego
 img_size: 640
 
 # --- HIPERPARÁMETROS DE HARDWARE ---
-epochs: 300              # Techo alto, regulado por 'patience'
-batch_size: 50           # 64 puede ser inestable si usas cache en RAM + Drive I/O. 32 es seguro.
-workers: 10               # Límite seguro para Colab
-cache: True              # Carga imágenes en RAM para compensar la lentitud de escribir en Drive
+epochs: 300              
+batch_size: 50           # Mantener alto para SGD (SGD se beneficia de batches grandes)
+workers: 10              
+cache: True              
 device: 0                
 
-# --- OPTIMIZADOR ---
-optimizer: "Adam"        
-lr0: 0.001               
-momentum: 0.937
-weight_decay: 0.0005
+# --- OPTIMIZADOR (ACTUALIZADO: Táctica Cítricos) ---
+optimizer: "SGD"         # Cambiado de Adam a SGD para mejor generalización
+lr0: 0.01                # Tasa de aprendizaje inicial aumentada para SGD (Adam usaba 0.001)
+lrf: 0.01                # Tasa final (OneCycleLR)
+momentum: 0.937          # Momentum estándar para SGD
+weight_decay: 0.0005     # Decaimiento de pesos para evitar sobreajuste
+
+# --- HIPERPARÁMETROS DE PÉRDIDA (LOSS) ---
+fl_gamma: 1.5            # Focal Loss Gamma: Ayuda a detectar naranjas ocluidas/difíciles
 
 # --- ESTRATEGIA DE PARADA (PACIENCIA) ---
-patience: 20             # Si no mejora en 20 épocas, se detiene.
+patience: 25             # Aumentamos ligeramente la paciencia para dar tiempo a SGD de converger
 
-# --- AUGMENTATION (Nivel 2 - Agronómico) ---
+# --- AUGMENTATION FOTOMÉTRICA (NUEVO: Vital para Naranjas) ---
+# Valores inspirados en papers de detección de cítricos para manejar luz y madurez
+hsv_h: 0.015             # Hue: Variación de tono pequeña (para no confundir naranja con otros frutos)
+hsv_s: 0.7               # Saturation: Alta variación (fruta pálida vs muy viva/madura)
+hsv_v: 0.4               # Value: Variación de brillo media (simula sombras de hojas/sol)
+
+# --- AUGMENTATION GEOMÉTRICA (Nivel 2 - Agronómico) ---
 degrees: 20.0            # Rotación
 flipud: 0.5              # Espejo vertical
 fliplr: 0.5              # Espejo horizontal
@@ -39,4 +49,4 @@ mixup: 0.15              # Mezcla de imágenes
 copy_paste: 0.15         # Copy-Paste 
 
 # --- SISTEMA ---
-seed: 42
+seed: 10
