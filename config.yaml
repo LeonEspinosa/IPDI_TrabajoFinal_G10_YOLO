@@ -9,7 +9,7 @@ experiment_name: "YOLOv8n_Exp_Mejorado_SGD_HSV" # Nombre actualizado para difere
 data_yaml_path: "dataset/data.yaml" 
 
 # --- MODELO ---
-model_version: "yolov8n.pt" # Mantenemos v8 por ahora, actualizaremos a v10/11 luego
+model_version: "yolo11n.pt" # Version de YOLO
 img_size: 640
 
 # --- HIPERPARÁMETROS DE HARDWARE ---
