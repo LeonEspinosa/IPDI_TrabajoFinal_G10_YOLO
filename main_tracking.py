@@ -4,77 +4,88 @@ import sys
 from pathlib import Path
 import cv2
 
-# Importar lógica de tracking existente
-from track_video import process_video_tracking
+# Importar lógica de tracking
+try:
+    from track_video import process_video_tracking
+except ImportError:
+    print("❌ ERROR: No se encuentra 'track_video.py'. Asegúrate de estar en la carpeta correcta.")
+    sys.exit(1)
+
+# ==========================================
+#  CONFIGURACIÓN DE RUTAS POR DEFECTO
+#  (Edita esto para ejecutar con el botón Play)
+# ==========================================
+DEFAULT_CONFIG = {
+    # Usa r"" para evitar problemas con las barras invertidas en Windows
+    "video": r"D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Videos_de_prueba\prueba1.mp4",
+    
+    "model": r"Modelos de YOLO a USAR\v8nbestleomsgd.pt",
+    
+    "tracker": r"Tracking\botsort_custom.yaml",
+    
+    "show_live": True  # Poner en False si usas Colab
+}
+# ==========================================
 
 def main():
-    print("\n🍊 === SISTEMA DE TRACKING DEDICADO (IPDI G10) === 🍊")
-    print("Este script ejecuta EXCLUSIVAMENTE el seguimiento de objetos.\n")
+    print("\n🍊 === SISTEMA DE TRACKING DIRECTO (IPDI G10) === 🍊")
 
-    # --- Configuración de Argumentos ---
-    parser = argparse.ArgumentParser(description="Ejecutor de Tracking para Naranjas")
+    # Intentar leer argumentos de consola
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--video', type=str, help="Ruta al video")
+    parser.add_argument('--model', type=str, help="Ruta al modelo")
+    parser.add_argument('--tracker', type=str, help="Ruta al config del tracker")
+    parser.add_argument('--no-show', action='store_true', help="Desactivar ventana en vivo")
+    args, unknown = parser.parse_known_args()
+
+    # Lógica de Selección: Argumento > Defecto
+    video_path = args.video if args.video else DEFAULT_CONFIG["video"]
+    model_path = args.model if args.model else DEFAULT_CONFIG["model"]
+    tracker_path = args.tracker if args.tracker else DEFAULT_CONFIG["tracker"]
+    show_live = not args.no_show if args.video else DEFAULT_CONFIG["show_live"]
+
+    # --- Validaciones ---
+    if not os.path.exists(video_path):
+        print(f"❌ ERROR: No se encuentra el video:\n   {video_path}")
+        print("-> Revisa la variable DEFAULT_CONFIG en main_tracking.py")
+        return
+
+    if not os.path.exists(model_path):
+        print(f"❌ ERROR: No se encuentra el modelo:\n   {model_path}")
+        print("-> Revisa la ruta o entrena el modelo primero.")
+        return
+
+    # Validar Tracker
+    if not os.path.exists(tracker_path):
+        print(f"⚠️ AVISO: No se encuentra '{tracker_path}'.")
+        print("   Se usará la configuración por defecto de YOLO (puede generar duplicados).")
+        # No detenemos el programa, dejamos que YOLO use su default
     
-    # Argumentos obligatorios (o con defaults inteligentes si se llama desde .bat)
-    parser.add_argument('--video', type=str, required=True, help="Ruta al video de entrada")
-    parser.add_argument('--model', type=str, required=True, help="Ruta al modelo entrenado (.pt)")
-    parser.add_argument('--tracker', type=str, default='Tracking/botsort_custom.yaml', help="Configuración del tracker (.yaml)")
-    parser.add_argument('--show', action='store_true', help="Mostrar ventana de video en vivo (no usar en Colab)")
-    
-    args = parser.parse_args()
+    # Construir ruta de salida
+    path_obj = Path(video_path)
+    output_name = f"resultado_{path_obj.stem}.mp4"
+    output_path = path_obj.parent / output_name
 
-    # --- Validaciones de Rutas ---
-    if not os.path.exists(args.video):
-        print(f"❌ ERROR: No se encuentra el video: {args.video}")
-        sys.exit(1)
-        
-    if not os.path.exists(args.model):
-        print(f"❌ ERROR: No se encuentra el modelo: {args.model}")
-        print("   Por favor, entrena el modelo primero o verifica la ruta.")
-        sys.exit(1)
+    print(f"▶️  Entrada: {path_obj.name}")
+    print(f"🧠 Modelo:  {Path(model_path).name}")
+    print(f"💾 Salida:  {output_path}")
+    print("-" * 40)
 
-    # Verificar configuración del tracker
-    # Si es una ruta custom, debe existir. Si es un nombre interno (ej: 'botsort.yaml'), ultralytics lo maneja.
-    if os.path.sep in args.tracker and not os.path.exists(args.tracker):
-        print(f"⚠️ ADVERTENCIA: No se encuentra la configuración del tracker en: {args.tracker}")
-        print("   Se intentará usar la configuración por defecto de Ultralytics.")
-
-    # --- Configuración de Salida ---
-    # Guardar el resultado en la misma carpeta que el video original, con prefijo 'resultado_'
-    video_path = Path(args.video)
-    output_filename = f"resultado_{video_path.stem}.mp4"
-    output_path = video_path.parent / output_filename
-    
-    print(f"▶️  Procesando video: {video_path.name}")
-    print(f"🧠 Modelo: {Path(args.model).name}")
-    print(f"⚙️  Tracker: {args.tracker}")
-    print(f"💾 Salida: {output_path}")
-    print("-" * 50)
-
-    # --- Detección de Entorno Gráfico ---
-    # Si el usuario pasó --show, intentamos mostrar. Si no, o si es headless, no.
-    # Colab/Servidores no tienen DISPLAY.
-    is_headless = 'google.colab' in sys.modules or os.environ.get('DISPLAY') is None
-    show_live = args.show and not is_headless
-
-    if args.show and is_headless:
-        print("⚠️ AVISO: Se solicitó --show pero no se detectó entorno gráfico. Se desactivará la visualización en vivo.")
-
-    # --- Ejecutar Tracking ---
+    # Ejecutar
     try:
         process_video_tracking(
-            model_path=args.model,
+            model_path=str(model_path),
             input_video_path=str(video_path),
             output_video_path=str(output_path),
-            tracker_type=args.tracker,
+            tracker_type=str(tracker_path),
             show_live=show_live
         )
-        print("\n✅ Proceso de tracking finalizado exitosamente.")
-        
+    except KeyboardInterrupt:
+        print("\n🛑 Proceso detenido por el usuario.")
     except Exception as e:
-        print(f"\n❌ Ocurrió un error durante el tracking: {e}")
+        print(f"\n❌ Ocurrió un error inesperado: {e}")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
 
 if __name__ == "__main__":
     main()

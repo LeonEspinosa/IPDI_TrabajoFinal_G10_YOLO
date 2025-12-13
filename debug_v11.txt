@@ -1,0 +1,30 @@
+
+🍊 === SISTEMA DE TRACKING DIRECTO (IPDI G10) === 🍊
+▶️  Entrada: vid_prueba.mp4
+🧠 Modelo:  v11nbestleom.pt
+💾 Salida:  D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Videos_de_prueba\resultado_vid_prueba.mp4
+----------------------------------------
+
+🍊 === SISTEMA DE TRACKING (SUPERVISION) ===
+📂 Modelo: v11nbestleom.pt
+🎞️ Video: vid_prueba.mp4
+💾 Salida: D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Videos_de_prueba\resultado_vid_prueba.mp4
+----------------------------------------
+⏳ Cargando modelo...
+⚠️ Alerta de carga: local variable 'torch' referenced before assignment. Intentando carga con weights_only=False...
+✅ Modelo cargado con weights_only=False
+ℹ️ Video Info: 898x506 @ 24 FPS
+🚀 Iniciando procesamiento...
+  0%|          | 0/290 [00:00<?, ?frames/s]  0%|          | 0/290 [00:00<?, ?frames/s]
+
+❌ Error guardando el video: 
+            'IterableSimpleNamespace' object has no attribute 'fuse_score'. This may be caused by a modified or out of date ultralytics
+            'default.yaml' file.
+Please update your code with 'pip install -U ultralytics' and if necessary replace
+            D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Yolov8n\Lib\site-packages\ultralytics\cfg\default.yaml with the latest version from
+            https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/default.yaml
+            
+
+✅ ÉXITO TOTAL. Video guardado: D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Videos_de_prueba\resultado_vid_prueba.mp4
+📊 Tamaño: 0.00 MB
+🍊 Naranjas Detectadas: 0

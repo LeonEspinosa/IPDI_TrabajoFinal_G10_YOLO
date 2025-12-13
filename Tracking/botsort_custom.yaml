@@ -38,3 +38,7 @@ appearance_thresh: 0.25
 # False: Más rápido y a veces mejor para objetos idénticos como naranjas (se confunden entre sí).
 # True: Intenta distinguir cada naranja por sus píxeles. 
 with_reid: False
+
+# fuse_score: Fusionar el score de detección con el score de tracking
+# True: Combina confianza de detección con similitud de tracking para mejor asociación
+fuse_score: True
