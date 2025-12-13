@@ -9,7 +9,10 @@ import ast
 
 # Importar modulos de Descriptores
 try:
-    from Descriptores import basicos, contorno, factores_forma, topologicos, preprocesamiento, color
+    from Descriptores import (
+        basicos, contorno, factores_forma, topologicos, preprocesamiento, color,
+        nuevas_areas, nuevas_transformadas, nuevos_geometricos, nuevos_factores
+    )
     print(">> Modulos de Descriptores importados correctamente.")
 except ImportError as e:
     print(f"!! Error importando Descriptores: {e}")
@@ -181,6 +184,47 @@ def main():
                 datos['Signature_Std_Dev'] = 0
                 
         except Exception:
+            pass
+
+        # --- NUEVOS DESCRIPTORES ---
+
+        # NUEVAS AREAS (Relacionadas a area/radio)
+        try:
+            datos['Radio_Inscripto'] = round(nuevas_areas.calcular_radio_inscripto(mascara), 2)
+            datos['Radius_Ratio'] = round(nuevas_areas.calcular_radius_ratio(mascara, contorno_obj), 4)
+            datos['Area_Fraction'] = round(nuevas_areas.calcular_area_fraction(mascara), 4)
+        except Exception as e:
+            # print(f"Error Nuevas Areas: {e}")
+            pass
+
+        # NUEVAS TRANSFORMADAS (Fourier, Fractal)
+        try:
+            fourier = nuevas_transformadas.descriptores_fourier(contorno_obj, n_descriptores=10)
+            datos['Fourier_Desc'] = format_array(fourier)
+            datos['Dimension_Fractal'] = round(nuevas_transformadas.dimension_fractal(mascara), 4)
+        except Exception as e:
+            pass
+
+        # NUEVOS GEOMETRICOS
+        try:
+            n_vert, _ = nuevos_geometricos.aproximacion_poligonal(contorno_obj, epsilon_factor=0.02)
+            datos['Num_Vertices_Poly'] = n_vert
+            datos['Extent_1'] = round(nuevos_geometricos.calcular_extent_1(contorno_obj), 4)
+            datos['Perimetro_ChainCode'] = round(nuevos_geometricos.perimetro_chain_code_teorico(contorno_obj), 2)
+            
+            hist_tan = nuevos_geometricos.histograma_tangentes(contorno_obj, n_bins=8)
+            datos['Hist_Tangentes'] = format_array(hist_tan)
+        except Exception as e:
+            pass
+
+        # NUEVOS FACTORES DE FORMA
+        try:
+            datos['Elongacion_Fibra'] = round(nuevos_factores.elongacion_criterio_fibra(mascara, contorno_obj), 4)
+            datos['Elongacion_Area'] = round(nuevos_factores.elongacion_criterio_area(contorno_obj), 4)
+            
+            hu_log = nuevos_factores.calcular_momentos_hu_log(contorno_obj)
+            datos['Hu_Moments_Log'] = format_array(hu_log)
+        except Exception as e:
             pass
 
         resultados_totales.append(datos)
