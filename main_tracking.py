@@ -27,7 +27,7 @@ except ImportError:
 #  CONFIGURACIÓN DE RUTAS POR DEFECTO
 # ==========================================
 DEFAULT_CONFIG = {
-    "video": r"D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Videos_de_prueba\Prueba1.mp4",
+    "video": r"D:\Universidad\Clases_2025\PDI\Trabajo Final\Tp_Final\Videos_de_prueba\vid_prueba.mp4",
     "model": r"Modelos de YOLO a USAR\v11nbestleom.pt",
     "tracker": r"Tracking\botsort_custom.yaml",
     "show_live": True
