@@ -9,7 +9,7 @@ from shape_descriptors import ShapeDescriptorProcessor
 
 def main():
     # Rutas (Cámbialas según tu PC)
-    MODEL_PATH = "Modelos de YOLO a USAR/bestfranco.pt"
+    MODEL_PATH = "Modelos de YOLO a USAR/bestleomsgd.pt"
     VIDEO_PATH = "D:/Universidad/Clases_2025/PDI/Trabajo Final/Tp_Final/Videos_de_prueba/vid_prueba.mp4"
     OUTPUT_VIDEO = "resultado_yiq_shape.mp4"
     OUTPUT_CSV = "reporte_yiq_shape.csv"

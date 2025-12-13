@@ -173,7 +173,7 @@ def process_video_agronomic(model_path, input_video_path, output_video_path, out
 
 if __name__ == "__main__":
     # Rutas Hardcodeadas para prueba local rápida
-    MODEL = "Modelos de YOLO a USAR/best.pt"
+    MODEL = "Modelos de YOLO a USAR/bestleomsgd.pt"
     VIDEO = "D:/Universidad/Clases_2025/PDI/Trabajo Final/Tp_Final/Videos_de_prueba/vid_prueba.mp4"
     
     process_video_agronomic(MODEL, VIDEO, "video_output_filtrado.mp4", "reporte_final_robusto.csv")

@@ -136,10 +136,10 @@ def process_video_tracking(model_path, input_video_path, output_video_path, trac
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, required=True, help="Ruta al archivo .pt del modelo")
-    parser.add_argument('--source', type=str, required=True, help="Ruta al video de entrada")
-    parser.add_argument('--output', type=str, default='resultado_supervision.mp4', help="Ruta de salida")
-    parser.add_argument('--method', type=str, default='bytetrack.yaml', help="Método de tracking")
+    parser.add_argument('--model', type=str, required=True, help="Modelos de YOLO a USAR/bestleomsgd.pt")
+    parser.add_argument('--source', type=str, required=True, help="Videos_de_prueba/vid_prueba.mp4")
+    parser.add_argument('--output', type=str, default='resultado_yiq_shape.mp4', help="resultado_yiq_shape.mp4")
+    parser.add_argument('--method', type=str, default='botsort.yaml', help="Tracking/botsort.yaml")
     
     args = parser.parse_args()
     
