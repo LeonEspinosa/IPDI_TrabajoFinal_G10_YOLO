@@ -1,0 +1,12 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Configuración personalizada de ByteTrack para conteo de naranjas (IPDI G10)
+# ByteTrack es más rápido que BoT-SORT pero no tiene compensación de movimiento de cámara.
+
+tracker_type: bytetrack
+
+# Umbrales ajustados para robustez
+track_high_thresh: 0.5
+track_low_thresh: 0.1
+new_track_thresh: 0.6
+track_buffer: 60  # Memoria larga igual que en BoT-SORT
+match_thresh: 0.8

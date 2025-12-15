@@ -1,5 +1,6 @@
 # --- Entornos Virtuales (Tu venv específico y otros comunes) ---
 Yolov8n/
+YOLOIPDI310/
 venv/
 env/
 .env
@@ -26,3 +27,9 @@ datasets/
 Thumbs.db
 *.mp4
 *.webm
+*.csv
+*.jpg
+*.png
+
+dataset/
+dataset.zip
